@@ -8,11 +8,6 @@ return [
     'enabled' => env('VOYAGER_MERGE_ENABLED', true),
 
     /*
-     * If validation enabled for voyager-merge package.
-     */
-    'validation' => env('VOYAGER_MERGE_VALIDATION_ENABLED', false),
-
-    /*
     | Here you can specify for which data type slugs merge is enabled
     | 
     | Supported: "*", or data type slugs "users", "roles"
@@ -54,48 +49,27 @@ return [
     ],
 
     /*
-    | The default merge disk.
-    */
-    'disk' => env('VOYAGER_MERGE_DISK', null),
-
-    /*
-    | The default merge readerType.
-    | 
-    | Supported: "Xlsx", "Csv", "Ods", "Xls",
-    |   "Slk", "Xml", "Gnumeric", "Html"
-    */
-    'readerType' => env('VOYAGER_MERGE_READER_TYPE', 'Xlsx'),
-
-    /*
-    | The default merge writerType.
-    | 
-    | Supported: "Xlsx", "Csv", "Csv", "Ods", "Xls",
-    |   "Slk", "Xml", "Gnumeric", "Html"
-    */
-    'writerType' => env('VOYAGER_MERGE_WRITER_TYPE', 'Xlsx'),
-
-    /*
-    | Here you can specify which mimes are allowed to upload
-    | 
-    | Supported: "xlsx","csv","tsv","ods","xls","slk","xml","gnumeric","html"
-    |
-    */
-
-    'allowed_mimes' => env('VOYAGER_MERGE_ALLOWED_MIMES', 'xlsx,txt,csv,tsv,ods,xls,slk,xml,gnumeric,html'),
-
-    /*
     |--------------------------------------------------------------------------
-    | Unique column config
+    | DataRows config
     |--------------------------------------------------------------------------
     |
-    | Here you can specify unique column settings
-    | Make sure db also has unique index or primary index on that column
-    | Leave null for primary key
+    | Here you can specify which data rows you want to bulk update
     |
     */
 
-    'unique_column' => [
-        // 'users' => 'email',
-        // 'YOUR_DATATYPE_SLUG' => 'MODEL_UNIQUE_KEY',
+    'data_rows' => [
+        'default' => [
+            'assigned_to_id',
+            'parent_id',
+            'status',
+        ],
+        'users' => [
+            'role_id'
+        ],
+        'posts' => [
+            'status',
+            'category_id',
+            'featured',
+        ],
     ],
 ];

@@ -6,10 +6,6 @@ namespace Joy\VoyagerMerge;
 
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
-use Joy\VoyagerMerge\Console\Commands\AllDataTypesMerge;
-use Joy\VoyagerMerge\Console\Commands\AllDataTypesTemplateExport;
-use Joy\VoyagerMerge\Console\Commands\DataTypeMerge;
-use Joy\VoyagerMerge\Console\Commands\DataTypeTemplateExport;
 use TCG\Voyager\Facades\Voyager;
 
 /**
@@ -95,8 +91,7 @@ class VoyagerMergeServiceProvider extends ServiceProvider
         ], 'config');
 
         $this->publishes([
-            __DIR__ . '/../resources/views'                => resource_path('views/vendor/joy-voyager-merge'),
-            __DIR__ . '/../resources/views/bread/partials' => resource_path('views/vendor/voyager/bread/partials'),
+            __DIR__ . '/../resources/views' => resource_path('views/vendor/joy-voyager-merge'),
         ], 'views');
 
         $this->publishes([
@@ -110,27 +105,8 @@ class VoyagerMergeServiceProvider extends ServiceProvider
 
     protected function registerCommands(): void
     {
-        $this->app->singleton('command.joy-voyager.merge-template', function () {
-            return new DataTypeTemplateExport();
-        });
-
-        $this->app->singleton('command.joy-voyager.merge-all-template', function () {
-            return new AllDataTypesTemplateExport();
-        });
-
-        $this->app->singleton('command.joy-voyager.merge', function () {
-            return new DataTypeMerge();
-        });
-
-        $this->app->singleton('command.joy-voyager.merge-all', function () {
-            return new AllDataTypesMerge();
-        });
-
         $this->commands([
-            'command.joy-voyager.merge-template',
-            'command.joy-voyager.merge-all-template',
-            'command.joy-voyager.merge',
-            'command.joy-voyager.merge-all'
+            //
         ]);
     }
 }

@@ -4,53 +4,37 @@ namespace Joy\VoyagerMerge\Actions;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Validator;
 use TCG\Voyager\Actions\AbstractAction;
 use TCG\Voyager\Facades\Voyager;
-use Maatwebsite\Excel\Excel;
 
 class MergeAction extends AbstractAction
 {
     /**
-     * Optional mimes
+     * Optional rows
      */
-    protected $mimes;
-
-    /**
-     * Optional File Path
-     */
-    protected $filePath;
-
-    /**
-     * Optional Disk
-     */
-    protected $disk;
-
-    /**
-     * Optional Reader Type
-     */
-    protected $readerType;
+    protected $rows;
 
     public function getTitle()
     {
-        return __('joy-voyager-merge::generic.bulk_merge');
+        return __('joy-voyager-merge::generic.merge');
     }
 
     public function getIcon()
     {
-        return 'voyager-upload';
+        return 'fa fa-lock';
     }
 
     public function getPolicy()
     {
-        return 'browse';
+        return 'edit';
     }
 
     public function getAttributes()
     {
         return [
-            'id'    => 'bulk_merge_btn',
-            'class' => 'btn btn-primary',
+            'id'     => 'merge_btn',
+            'class'  => 'btn btn-info',
+            'target' => '_blank',
         ];
     }
 
@@ -61,15 +45,33 @@ class MergeAction extends AbstractAction
 
     public function shouldActionDisplayOnDataType()
     {
-        return config('joy-voyager-merge.enabled', true) !== false
-            && isInPatterns(
-                $this->dataType->slug,
-                config('joy-voyager-merge.allowed_slugs', ['*'])
-            )
-            && !isInPatterns(
-                $this->dataType->slug,
-                config('joy-voyager-merge.not_allowed_slugs', [])
+        if (config('joy-voyager-merge.enabled', true) !== true) {
+            return false;
+        }
+        if (!isInPatterns(
+            $this->dataType->slug,
+            config('joy-voyager-merge.allowed_slugs', ['*'])
+        )) {
+            return false;
+        }
+        if (isInPatterns(
+            $this->dataType->slug,
+            config('joy-voyager-merge.not_allowed_slugs', [])
+        )) {
+            return false;
+        }
+
+        $defaultDataRows  = config('joy-voyager-merge.data_rows.default');
+        $dataTypeDataRows = config('joy-voyager-merge.data_rows.' . $this->dataType->slug, $defaultDataRows);
+        $dataTypeDataRows = $this->rows ?? $dataTypeDataRows;
+
+        $dataTypeRows = $this->dataType->editRows->filter(function ($row) use ($dataTypeDataRows) {
+            return in_array($row->field, $dataTypeDataRows) || (
+                $row->type === 'relationship' && in_array($row->details->column, $dataTypeDataRows)
             );
+        });
+
+        return $dataTypeRows->count() > 0;
     }
 
     public function massAction($ids, $comingFrom)
@@ -81,44 +83,10 @@ class MergeAction extends AbstractAction
         $dataType = Voyager::model('DataType')->where('slug', '=', $slug)->first();
 
         // Check permission
-        Gate::authorize('browse', app($dataType->model_name));
+        Gate::authorize('edit', app($dataType->model_name));
 
-        $mimes = $this->mimes ?? config('joy-voyager-merge.allowed_mimes');
-
-        $validator = Validator::make(request()->all(), [
-            'file' => 'required|mimes:' . $mimes,
-        ]);
-
-        if ($validator->fails()) {
-            return redirect($comingFrom)->with([
-                'message'    => $validator->errors()->first(),
-                'alert-type' => 'error',
-            ]);
-        }
-
-        $disk = $this->disk ?? config('joy-voyager-merge.disk');
-        // @FIXME let me auto detect OR NOT??
-        $readerType = null; //$this->readerType ?? config('joy-voyager-merge.readerType', Excel::XLSX);
-
-        $mergeClass = 'joy-voyager-merge.merge';
-
-        if (app()->bound("joy-voyager-merge.$slug.merge")) {
-            $mergeClass = "joy-voyager-merge.$slug.merge";
-        }
-
-        $merge = app($mergeClass);
-
-        $merge->set(
-            $dataType,
-            request()->all(),
-        )->merge(
-            request()->file('file'),
-            $disk,
-            $readerType
-        );
-
-        return redirect($comingFrom)->with([
-            'message'    => __('joy-voyager-merge::generic.successfully_mergeed') . " {$dataType->getTranslatedAttribute('display_name_singular')}",
+        return redirect()->back()->with([
+            'message'    => __('voyager::generic.successfully_updated') . " {$dataType->getTranslatedAttribute('display_name_singular')}",
             'alert-type' => 'success',
         ]);
     }
@@ -131,6 +99,24 @@ class MergeAction extends AbstractAction
             $view = 'joy-voyager-merge::' . $this->dataType->slug . '.merge';
         }
         return $view;
+    }
+
+    public function rows()
+    {
+        if ($this->rows) {
+            return $this->rows;
+        }
+
+        $defaultDataRows  = config('joy-voyager-merge.data_rows.default');
+        $dataTypeDataRows = config('joy-voyager-merge.data_rows.' . $this->dataType->slug, $defaultDataRows);
+
+        $dataTypeRows = $this->dataType->editRows->filter(function ($row) use ($dataTypeDataRows) {
+            return in_array($row->field, $dataTypeDataRows) || (
+                $row->type === 'relationship' && in_array($row->details->column, $dataTypeDataRows)
+            );
+        });
+
+        return $dataTypeRows->pluck('field')->toArray();
     }
 
     protected function getSlug(Request $request)

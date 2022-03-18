@@ -1,15 +1,16 @@
 <?php
 
 return [
-    'successfully_mergeed'   => 'Successfully Mergeed',
-    'bulk_merge'   => 'Merge',
-    'bulk_merge_title'   => 'Merge',
-    'bulk_merge_confirm'   => 'Merge',
-    'bulk_merge_template'   => 'Download Template to Merge',
-    'bulk_merge_all_template'   => 'Download Template to Merge All',
-    'successfully_mergeed_all'   => 'Successfully Mergeed All',
-    'bulk_merge_all'   => 'Merge All',
-    'bulk_merge_all_title'   => 'Merge All',
-    'bulk_merge_all_confirm'   => 'Merge All',
-    'bulk_merge_all_template'   => 'Download Template to Merge All',
+    'successfully_merged'     => 'Successfully Merged',
+    'successfully_merged_all' => 'Successfully Merged All',
+    'merge'                   => 'Merge',
+    'merge_all'               => 'Merge All',
+    'merge_title'             => 'Merge',
+    'merge_confirm'           => 'Merge',
+    'merge_nothing'           => 'You haven\'t selected anything to bulk update',
+    'bulk_assignee_update'          => 'Assignee',
+    'bulk_parent_update'            => 'Parent',
+    'bulk_status_update'            => 'Status',
+    'bulk_role_update'              => 'Role',
+    'bulk_featured_update'          => 'Featured',
 ];

@@ -6,10 +6,6 @@ namespace Joy\VoyagerMerge;
 
 use Illuminate\Contracts\Support\DeferrableProvider;
 use Illuminate\Support\ServiceProvider;
-use Joy\VoyagerMerge\Exports\AllDataTypesTemplateExport;
-use Joy\VoyagerMerge\Exports\DataTypeTemplateExport;
-use Joy\VoyagerMerge\Merges\AllDataTypesMerge;
-use Joy\VoyagerMerge\Merges\DataTypeMerge;
 
 /**
  * Class MergeServiceProvider
@@ -30,19 +26,7 @@ class MergeServiceProvider extends ServiceProvider implements DeferrableProvider
      */
     public function register()
     {
-        $this->app->bind('joy-voyager-merge.merge', function ($app) {
-            return new DataTypeMerge();
-        });
-        $this->app->bind('joy-voyager-merge.merge-template', function ($app) {
-            return new DataTypeTemplateExport();
-        });
-
-        $this->app->bind('joy-voyager-merge.merge-all', function ($app) {
-            return new AllDataTypesMerge();
-        });
-        $this->app->bind('joy-voyager-merge.merge-all-template', function ($app) {
-            return new AllDataTypesTemplateExport();
-        });
+        //
     }
 
     /**
@@ -53,10 +37,7 @@ class MergeServiceProvider extends ServiceProvider implements DeferrableProvider
     public function provides()
     {
         return [
-            'joy-voyager-merge.merge',
-            'joy-voyager-merge.merge-template',
-            'joy-voyager-merge.merge-all',
-            'joy-voyager-merge.merge-all-template'
+            //
         ];
     }
 }

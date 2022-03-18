@@ -31,7 +31,6 @@ Route::group(['prefix' => config('joy-voyager-merge.admin_prefix', 'admin')], fu
 
             try {
                 foreach (Voyager::model('DataType')::all() as $dataType) {
-                    Route::get($dataType->slug . '/merge-template', $breadController.'@mergeTemplate')->name($dataType->slug.'.merge-template');
                     Route::post($dataType->slug . '/merge', $breadController.'@merge')->name($dataType->slug.'.merge');
                 }
             } catch (\InvalidArgumentException $e) {
@@ -40,8 +39,7 @@ Route::group(['prefix' => config('joy-voyager-merge.admin_prefix', 'admin')], fu
                 // do nothing, might just be because table not yet migrated.
             }
 
-            Route::get('merge-template-all', $breadController.'@mergeTemplateAll')->name('merge-template-all');
-            Route::post('merge', $breadController.'@mergeAll')->name('merge-all');
+            // Route::get('merge', $breadController.'@mergeAll')->name('merge-all');
 
             // event(new RoutingAdminAfter()); @deprecated
         });

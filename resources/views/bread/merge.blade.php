@@ -1,83 +1,92 @@
-<a class="btn btn-info" id="bulk_merge_btn"><i class="voyager-upload"></i> <span>{{ __('joy-voyager-merge::generic.bulk_merge') }}</span></a>
+@php
+    $edit = true;
+    $add  = false;
+    $mergeDataTypeContent = new $dataType->model_name();
+    removeRelationshipField($dataType, 'add');
+    removeRelationshipField($dataType, 'edit');
+    $defaultDataRows = config('joy-voyager-merge.data_rows.default');
+    $dataTypeDataRows = config('joy-voyager-merge.data_rows.' . $dataType->slug, $defaultDataRows);
+    $dataTypeDataRows = method_exists($action, 'rows') ? $action->rows() : $dataTypeDataRows;
+    $hash = md5(get_class($action) . json_encode($dataTypeDataRows));
+@endphp
 
-{{-- Bulk merge modal --}}
-<div class="modal modal-info fade" tabindex="-1" id="bulk_merge_modal" role="dialog">
-    <form action="{{ route('voyager.'.$dataType->slug.'.action') }}" id="bulk_merge_form" method="POST" enctype="multipart/form-data">
+<!-- <form method="post" action="{{ route('voyager.'.$dataType->slug.'.action') }}" style="display:inline">
+    {{ csrf_field() }}
+    <button type="submit" {!! $action->convertAttributesToHtml() !!}><i class="{{ $action->getIcon() }}"></i>  <span class="hidden-xs hidden-sm">{{ $action->getTitle() }}</span></button>
+    <input type="hidden" name="action" value="{{ get_class($action) }}">
+    <input type="hidden" name="ids" value="" class="selected_ids">
+</form> -->
+<a class="btn btn-info" id="merge_btn{{ $hash }}" {!! $action->convertAttributesToHtml() !!}><i class="{{ $action->getIcon() }}"></i> <span>{{ $action->getTitle() }}</span></a>
+
+{{-- Bulk bulk update modal --}}
+<div class="modal modal-info fade" tabindex="-1" id="merge_modal{{ $hash }}" role="dialog">
+    <form action="{{ route('voyager.'.$dataType->slug.'.merge') }}" id="merge_form{{ $hash }}" method="POST" enctype="multipart/form-data">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
                             aria-hidden="true">&times;</span></button>
                 <h4 class="modal-title">
-                    <i class="voyager-upload"></i> {{ __('joy-voyager-merge::generic.bulk_merge_title') }} <span id="bulk_merge_count"></span> <span id="bulk_merge_display_name"></span>
+                    <i class="voyager-edit"></i> {{ __('joy-voyager-merge::generic.merge_title') }} <span id="merge_count{{ $hash }}"></span> <span id="merge_display_name{{ $hash }}"></span>
                 </h4>
             </div>
-            <div class="modal-body" id="bulk_merge_modal_body">
+            <div class="modal-body" id="merge_modal_body{{ $hash }}">
                 {{ csrf_field() }}
-                <input type="file" name="file">
+                <!-- Adding / Editing -->
+                @php
+                    $dataTypeRows = $dataType->{($edit ? 'editRows' : 'addRows' )}->filter(function($row) use($dataTypeDataRows) {
+                        return in_array($row->field, $dataTypeDataRows) || (
+                            $row->type === 'relationship' && in_array($row->details->column, $dataTypeDataRows)
+                        );
+                    });
+                @endphp
+
+                @foreach($dataTypeRows as $row)
+                    <!-- GET THE DISPLAY OPTIONS -->
+                    @php
+                        $display_options = $row->details->display ?? NULL;
+                        if ($mergeDataTypeContent->{$row->field.'_'.($edit ? 'edit' : 'add')}) {
+                            $mergeDataTypeContent->{$row->field} = $mergeDataTypeContent->{$row->field.'_'.($edit ? 'edit' : 'add')};
+                        } elseif ($mergeDataTypeContent->{$row->field.'_'.($edit ? 'bulk_edit' : 'bulk_add')}) {
+                            $mergeDataTypeContent->{$row->field} = $mergeDataTypeContent->{$row->field.'_'.($edit ? 'bulk_edit' : 'bulk_add')};
+                        }
+                    @endphp
+                    @if (isset($row->details->legend) && isset($row->details->legend->text))
+                        <legend class="text-{{ $row->details->legend->align ?? 'center' }}" style="background-color: {{ $row->details->legend->bgcolor ?? '#f0f0f0' }};padding: 5px;">{{ $row->details->legend->text }}</legend>
+                    @endif
+
+                    <div class="form-group @if($row->type == 'hidden') hidden @endif col-md-{{ $display_options->width ?? 12 }} {{ $errors->has($row->field) ? 'has-error' : '' }}" @if(isset($display_options->id)){{ "id=$display_options->id" }}@endif>
+                        {{ $row->slugify }}
+                        <label class="control-label" for="name">{{ $row->getTranslatedAttribute('display_name') }}</label>
+                        @include('voyager::multilingual.input-hidden-bread-edit-add', ['dataTypeContent' => $mergeDataTypeContent])
+                        @if (isset($row->details->view))
+                            @include($row->details->view, ['row' => $row, 'dataType' => $dataType, 'dataTypeContent' => $mergeDataTypeContent, 'content' => $mergeDataTypeContent->{$row->field}, 'action' => ($edit ? 'edit' : 'add'), 'view' => ($edit ? 'edit' : 'add'), 'options' => $row->details])
+                        @elseif ($row->type == 'relationship')
+                            @include('voyager::formfields.relationship', ['options' => $row->details, 'dataTypeContent' => $mergeDataTypeContent])
+                        @else
+                            {!! app('voyager')->formField($row, $dataType, $mergeDataTypeContent) !!}
+                        @endif
+
+                        @foreach (app('voyager')->afterFormFields($row, $dataType, $mergeDataTypeContent) as $after)
+                            {!! $after->handle($row, $dataType, $mergeDataTypeContent) !!}
+                        @endforeach
+                        @if ($errors->has($row->field))
+                            @foreach ($errors->get($row->field) as $error)
+                                <span class="help-block">{{ $error }}</span>
+                            @endforeach
+                        @endif
+                    </div>
+                @endforeach
             </div>
             <div class="modal-footer">
-                <div class="btn-group pull-left" role="group">
-                    <div class="btn-group" role="group">
-                        <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        <i class="voyager-download"></i> <span>{{ __('joy-voyager-merge::generic.bulk_merge_template') }}</span>
-                            <span class="caret"></span>
-                        </button>
-                        <ul class="dropdown-menu">
-                            <li>
-                                <a
-                                    class='export-template-by-writer'
-                                    data-writer-type="Xls"
-                                    href="{{ route('voyager.'.$dataType->slug.'.merge-template') }}?writerType=Xls"
-                                    title="{{ __('joy-voyager-merge::generic.bulk_merge_template') }}"
-                                    target="_blank"
-                                >Xls</a>
-                            </li>
-                            <li>
-                                <a
-                                    class='export-template-by-writer'
-                                    data-writer-type="Xlsx"
-                                    href="{{ route('voyager.'.$dataType->slug.'.merge-template') }}?writerType=Xlsx"
-                                    title="{{ __('joy-voyager-merge::generic.bulk_merge_template') }}"
-                                    target="_blank"
-                                >Xlsx</a>
-                            </li>
-                            <li>
-                                <a
-                                    class='export-template-by-writer'
-                                    data-writer-type="Ods"
-                                    href="{{ route('voyager.'.$dataType->slug.'.merge-template') }}?writerType=Ods"
-                                    title="{{ __('joy-voyager-merge::generic.bulk_merge_template') }}"
-                                    target="_blank"
-                                >Ods</a>
-                            </li>
-                            <li>
-                                <a
-                                    class='export-template-by-writer'
-                                    data-writer-type="Csv"
-                                    href="{{ route('voyager.'.$dataType->slug.'.merge-template') }}?writerType=Csv"
-                                    title="{{ __('joy-voyager-merge::generic.bulk_merge_template') }}"
-                                    target="_blank"
-                                >Csv</a>
-                            </li>
-                            <li>
-                                <a
-                                    class='export-template-by-writer'
-                                    data-writer-type="Html"
-                                    href="{{ route('voyager.'.$dataType->slug.'.merge-template') }}?writerType=Html"
-                                    title="{{ __('joy-voyager-merge::generic.bulk_merge_template') }}"
-                                    target="_blank"
-                                >Html</a>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-                <!-- <button type="submit" {!! $action->convertAttributesToHtml() !!}><i class="{{ $action->getIcon() }}"></i> {{ $action->getTitle() }}</button> -->
+                <!-- <button type="submit" {!! $action->convertAttributesToHtml() !!}><i class="{{ $action->getIcon() }}"></i> <span class="hidden-xs hidden-sm">{{ $action->getTitle() }}</span></button> -->
                 <input type="hidden" name="action" value="{{ get_class($action) }}">
-                <!-- <input type="hidden" name="ids" value="" class="selected_ids"> -->
-                <!-- <input type="hidden" name="ids" id="bulk_merge_input" value=""> -->
+                <input type="hidden" name="ids" id="merge_input{{ $hash }}" value="">
+                @foreach($dataTypeDataRows as $dataTypeDataRow)
+                    <input type="hidden" name="rows[]" value="{{ $dataTypeDataRow }}">
+                @endforeach
                 <input type="submit" class="btn btn-info pull-right merge-confirm"
-                            value="{{ __('joy-voyager-merge::generic.bulk_merge_confirm') }} {{ strtolower($dataType->getTranslatedAttribute('display_name_plural')) }}">
+                            value="{{ __('joy-voyager-merge::generic.merge_confirm') }} {{ strtolower($dataType->getTranslatedAttribute('display_name_plural')) }}">
                 <button type="button" class="btn btn-default pull-right" data-dismiss="modal">
                     {{ __('voyager::generic.cancel') }}
                 </button>
@@ -90,40 +99,40 @@
 @push('javascript')
 <script>
 $(function() {
-    // Bulk merge selectors
-    var $bulkMergeBtn = $('#bulk_merge_btn');
-    var $bulkMergeModal = $('#bulk_merge_modal');
-    var $bulkMergeCount = $('#bulk_merge_count');
-    var $bulkMergeDisplayName = $('#bulk_merge_display_name');
-    var $bulkMergeInput = $('#bulk_merge_input');
+    // Bulk bulk update selectors
+    var $mergeBtn = $('#merge_btn{{ $hash }}');
+    var $mergeModal = $('#merge_modal{{ $hash }}');
+    var $mergeCount = $('#merge_count{{ $hash }}');
+    var $mergeDisplayName = $('#merge_display_name{{ $hash }}');
+    var $mergeInput = $('#merge_input{{ $hash }}');
     // Reposition modal to prevent z-index issues
-    $bulkMergeModal.appendTo('body');
-    // Bulk merge listener
-    $bulkMergeBtn.click(function () {
+    $mergeModal.appendTo('body');
+    // Bulk bulk update listener
+    $mergeBtn.click(function () {
         var ids = [];
         var $checkedBoxes = $('#dataTable input[type=checkbox]:checked').not('.select_all');
         var count = $checkedBoxes.length;
-        // if (count) {
+        if (count) {
             // Reset input value
-            $bulkMergeInput.val('');
+            $mergeInput.val('');
             // Deletion info
             var displayName = count > 1 ? '{{ $dataType->getTranslatedAttribute('display_name_plural') }}' : '{{ $dataType->getTranslatedAttribute('display_name_singular') }}';
             displayName = displayName.toLowerCase();
-            // $bulkMergeCount.html(count);
-            $bulkMergeDisplayName.html(displayName);
+            $mergeCount.html(count);
+            $mergeDisplayName.html(displayName);
             // Gather IDs
             $.each($checkedBoxes, function () {
                 var value = $(this).val();
                 ids.push(value);
             })
             // Set input value
-            $bulkMergeInput.val(ids);
+            $mergeInput.val(ids);
             // Show modal
-            $bulkMergeModal.modal('show');
-        // } else {
-        //     // No row selected
-        //     toastr.warning('{{ __('joy-voyager-merge::generic.bulk_merge_nothing') }}');
-        // }
+            $mergeModal.modal('show');
+        } else {
+            // No row selected
+            toastr.warning('{{ __('joy-voyager-merge::generic.merge_nothing') }}');
+        }
     });
 });
 </script>
