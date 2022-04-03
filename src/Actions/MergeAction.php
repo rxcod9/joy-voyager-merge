@@ -21,7 +21,7 @@ class MergeAction extends AbstractAction
 
     public function getIcon()
     {
-        return 'fa fa-lock';
+        return 'fa-solid fa-code-merge';
     }
 
     public function getPolicy()
@@ -61,14 +61,8 @@ class MergeAction extends AbstractAction
             return false;
         }
 
-        $defaultDataRows  = config('joy-voyager-merge.data_rows.default');
-        $dataTypeDataRows = config('joy-voyager-merge.data_rows.' . $this->dataType->slug, $defaultDataRows);
-        $dataTypeDataRows = $this->rows ?? $dataTypeDataRows;
-
-        $dataTypeRows = $this->dataType->editRows->filter(function ($row) use ($dataTypeDataRows) {
-            return in_array($row->field, $dataTypeDataRows) || (
-                $row->type === 'relationship' && in_array($row->details->column, $dataTypeDataRows)
-            );
+        $dataTypeRows = $this->dataType->editRows->filter(function ($row) {
+            return !in_array($row->type, ['password']);
         });
 
         return $dataTypeRows->count() > 0;
@@ -86,7 +80,7 @@ class MergeAction extends AbstractAction
         Gate::authorize('edit', app($dataType->model_name));
 
         return redirect()->back()->with([
-            'message'    => __('voyager::generic.successfully_updated') . " {$dataType->getTranslatedAttribute('display_name_singular')}",
+            'message'    => __('voyager::generic.successfully_merged') . " {$dataType->getTranslatedAttribute('display_name_singular')}",
             'alert-type' => 'success',
         ]);
     }
@@ -99,24 +93,6 @@ class MergeAction extends AbstractAction
             $view = 'joy-voyager-merge::' . $this->dataType->slug . '.merge';
         }
         return $view;
-    }
-
-    public function rows()
-    {
-        if ($this->rows) {
-            return $this->rows;
-        }
-
-        $defaultDataRows  = config('joy-voyager-merge.data_rows.default');
-        $dataTypeDataRows = config('joy-voyager-merge.data_rows.' . $this->dataType->slug, $defaultDataRows);
-
-        $dataTypeRows = $this->dataType->editRows->filter(function ($row) use ($dataTypeDataRows) {
-            return in_array($row->field, $dataTypeDataRows) || (
-                $row->type === 'relationship' && in_array($row->details->column, $dataTypeDataRows)
-            );
-        });
-
-        return $dataTypeRows->pluck('field')->toArray();
     }
 
     protected function getSlug(Request $request)

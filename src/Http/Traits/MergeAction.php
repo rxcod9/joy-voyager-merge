@@ -32,14 +32,8 @@ trait MergeAction
         // GET THE DataType based on the slug
         $dataType = Voyager::model('DataType')->where('slug', '=', $slug)->first();
 
-        $defaultDataRows  = config('joy-voyager-merge.data_rows.default');
-        $dataTypeDataRows = config('joy-voyager-merge.data_rows.' . $dataType->slug, $defaultDataRows);
-        $dataTypeDataRows = $request->get('rows', $dataTypeDataRows);
-
-        $dataTypeRows = $dataType->editRows->filter(function ($row) use ($dataTypeDataRows) {
-            return in_array($row->field, $dataTypeDataRows) || (
-                $row->type === 'relationship' && in_array($row->details->column, $dataTypeDataRows)
-            );
+        $dataTypeRows = $dataType->editRows->filter(function ($row) {
+            return !in_array($row->type, ['password']);
         });
 
         $ids = explode(',', $request->ids);
@@ -60,7 +54,7 @@ trait MergeAction
         }
 
         return $redirect->with([
-            'message'    => __('voyager::generic.successfully_updated') . " {$dataType->getTranslatedAttribute('display_name_singular')}",
+            'message'    => __('voyager::generic.successfully_merged') . " {$dataType->getTranslatedAttribute('display_name_singular')}",
             'alert-type' => 'success',
         ]);
     }
