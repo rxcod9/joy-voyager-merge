@@ -87,10 +87,10 @@ class MergeAction extends AbstractAction
 
     public function view()
     {
-        $view = 'joy-voyager-merge::bread.merge';
+        $view = 'joy-voyager-merge::bread.merge-action';
 
-        if (view()->exists('joy-voyager-merge::' . $this->dataType->slug . '.merge')) {
-            $view = 'joy-voyager-merge::' . $this->dataType->slug . '.merge';
+        if (view()->exists('joy-voyager-merge::' . $this->dataType->slug . '.merge-action')) {
+            $view = 'joy-voyager-merge::' . $this->dataType->slug . '.merge-action';
         }
         return $view;
     }

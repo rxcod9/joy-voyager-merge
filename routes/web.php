@@ -31,7 +31,8 @@ Route::group(['prefix' => config('joy-voyager-merge.admin_prefix', 'admin')], fu
 
             try {
                 foreach (Voyager::model('DataType')::all() as $dataType) {
-                    Route::post($dataType->slug . '/merge', $breadController.'@merge')->name($dataType->slug.'.merge');
+                    Route::get($dataType->slug . '/{id}/merge', $breadController.'@merge')->name($dataType->slug.'.merge');
+                    Route::put($dataType->slug . '/{id}/merge', $breadController.'@updateMerge')->name($dataType->slug.'.update-merge');
                 }
             } catch (\InvalidArgumentException $e) {
                 throw new \InvalidArgumentException("Custom routes hasn't been configured because: ".$e->getMessage(), 1);
