@@ -2,21 +2,13 @@
 
 namespace Joy\VoyagerMerge\Http\Traits;
 
-use Exception;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Joy\VoyagerMerge\Events\BreadDataMerged;
-use TCG\Voyager\Database\Schema\SchemaManager;
-use TCG\Voyager\Events\BreadDataAdded;
 use TCG\Voyager\Events\BreadDataDeleted;
-use TCG\Voyager\Events\BreadDataRestored;
 use TCG\Voyager\Events\BreadDataUpdated;
-use TCG\Voyager\Events\BreadImagesDeleted;
 use TCG\Voyager\Facades\Voyager;
-use TCG\Voyager\Http\Controllers\Traits\BreadRelationshipParser;
-use TCG\Voyager\Models\DataType;
 
 trait MergeAction
 {
@@ -35,7 +27,7 @@ trait MergeAction
     public function merge(Request $request, $id)
     {
         $slug = $this->getSlug($request);
-        $ids = $request->ids;
+        $ids  = $request->ids;
 
         $dataType = Voyager::model('DataType')->where('slug', '=', $slug)->first();
 
@@ -47,20 +39,20 @@ trait MergeAction
             if ($model && in_array(SoftDeletes::class, class_uses_recursive($model))) {
                 $query = $query->withTrashed();
             }
-            if ($dataType->scope && $dataType->scope != '' && method_exists($model, 'scope'.ucfirst($dataType->scope))) {
+            if ($dataType->scope && $dataType->scope != '' && method_exists($model, 'scope' . ucfirst($dataType->scope))) {
                 $query = $query->{$dataType->scope}();
             }
 
-            $idsQuery = clone $query;
-            $dataTypeContent = call_user_func([$query, 'findOrFail'], $id);
+            $idsQuery         = clone $query;
+            $dataTypeContent  = call_user_func([$query, 'findOrFail'], $id);
             $dataTypeContents = call_user_func([$idsQuery, 'findOrFail'], $ids);
         } else {
             // If Model doest exist, get data from table name
-            $dataTypeContent = DB::table($dataType->name)->where('id', $id)->first();
+            $dataTypeContent  = DB::table($dataType->name)->where('id', $id)->first();
             $dataTypeContents = DB::table($dataType->name)->whereIn('id', $ids)->get();
         }
 
-        if(method_exists($dataTypeContent, 'preMerge')) {
+        if (method_exists($dataTypeContent, 'preMerge')) {
             $dataTypeContent->preMerge($dataTypeContents);
         }
 
@@ -93,7 +85,7 @@ trait MergeAction
     public function updateMerge(Request $request, $id)
     {
         $slug = $this->getSlug($request);
-        $ids = $request->ids;
+        $ids  = $request->ids;
 
         $dataType = Voyager::model('DataType')->where('slug', '=', $slug)->first();
 
@@ -102,7 +94,7 @@ trait MergeAction
 
         $model = app($dataType->model_name);
         $query = $model->query();
-        if ($dataType->scope && $dataType->scope != '' && method_exists($model, 'scope'.ucfirst($dataType->scope))) {
+        if ($dataType->scope && $dataType->scope != '' && method_exists($model, 'scope' . ucfirst($dataType->scope))) {
             $query = $query->{$dataType->scope}();
         }
         if ($model && in_array(SoftDeletes::class, class_uses_recursive($model))) {
@@ -110,8 +102,8 @@ trait MergeAction
         }
 
         $idsQeury = clone $query;
-        $data = $query->findOrFail($id);
-        $datas = $idsQeury->findOrFail($ids);
+        $data     = $query->findOrFail($id);
+        $datas    = $idsQeury->findOrFail($ids);
 
         // Check permission
         $this->authorize('edit', $data);
@@ -139,7 +131,7 @@ trait MergeAction
             event(new BreadDataDeleted($dataType, $datasEach));
         }
 
-        if(method_exists($data, 'postMerge')) {
+        if (method_exists($data, 'postMerge')) {
             $data->postMerge($datas);
         }
 
@@ -152,7 +144,7 @@ trait MergeAction
         }
 
         return $redirect->with([
-            'message'    => __('joy-voyager-merge::generic.successfully_merged')." {$dataType->getTranslatedAttribute('display_name_singular')}",
+            'message'    => __('joy-voyager-merge::generic.successfully_merged') . " {$dataType->getTranslatedAttribute('display_name_singular')}",
             'alert-type' => 'success',
         ]);
     }
