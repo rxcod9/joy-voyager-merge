@@ -3,6 +3,7 @@
 namespace Joy\VoyagerMerge\Events;
 
 use Illuminate\Queue\SerializesModels;
+use TCG\Voyager\Events\BreadDataChanged;
 use TCG\Voyager\Models\DataType;
 
 class BreadDataMerged
